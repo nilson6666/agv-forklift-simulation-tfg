@@ -1,0 +1,38 @@
+# apriltag_ros for the moving-mast camera (coarse estimate of the load
+# height, BEFORE fine docking with the fork camera).
+#
+# - Same family/size as apriltag.yaml (fork): the physical tag is the
+#   same, only the camera looking at it changes.
+# - `tag.frames`: explicitly renamed so this node does NOT publish on
+#   the default `tag36h11:<id>` frame — otherwise it would compete with
+#   the fork node (apriltag.launch.py) for the SAME TF frame with a
+#   different parent (mast_camera_optical_link vs.
+#   fork_camera_optical_link). TF does not allow 2 publishers of the
+#   same child with different parents (it would jump unpredictably,
+#   TF_MULTIPLE_PARENT). Own frames: `mast_tag:<id>`.
+# - ids 0-9: match the range assigned by `spawn_palets.py`.
+# - id 10: FIXED tag on the trailer structure (models/trailer/robot.sdf,
+#   a reference plate for when the trailer is empty) — renamed for the
+#   SAME reason as 0-9: if it stayed on the default `tag36h11:10` frame
+#   and the fork camera ever saw it too (approaching an empty trailer),
+#   there would again be 2 publishers of one frame with different
+#   parents.
+/**:
+    ros__parameters:
+        image_transport: raw
+        family: 36h11
+        size: 0.096
+        max_hamming: 0
+        detector:
+            threads: 2
+            decimate: 1.0
+            blur: 0.0
+            refine: true
+            sharpening: 0.25
+            debug: false
+        pose_estimation_method: "pnp"
+        tag:
+            ids: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+            frames: [mast_tag:0, mast_tag:1, mast_tag:2, mast_tag:3, mast_tag:4,
+                     mast_tag:5, mast_tag:6, mast_tag:7, mast_tag:8, mast_tag:9,
+                     mast_tag:10]

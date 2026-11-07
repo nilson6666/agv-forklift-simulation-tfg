@@ -1,0 +1,80 @@
+<?xml version="1.0" ?>
+<!-- Adapted from onshape-to-robot output for the new AGV model -->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ================================================================== -->
+  <!-- FRONT-RIGHT LIDAR (front-right corner, main diagonal \)             -->
+  <!-- ================================================================== -->
+  <link name="front_right_laser_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1e-09"/>
+      <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 -0.05" rpy="${-pi/2} 0 0"/>
+      <geometry>
+        <mesh filename="package://agv_description/assets/lidar.stl"/>
+      </geometry>
+      <material name="lidar_material">
+        <color rgba="0 0 0 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 -0.05" rpy="${-pi/2} 0 0"/>
+      <geometry>
+        <mesh filename="package://agv_description/assets/lidar.stl"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- Negative Y = right side (see wheel joints: right wheels at y<0).
+       Yaw -45 deg: bisector of the front-right corner, pointing outwards
+       between the front (+X) and right (-Y) edges.
+       X = 1.20 (0.17 m further out than the chassis edge, which reaches
+       x=1.03): flush with the chassis, the mesh left only 0.13 m free on
+       this side (< sensor min, 0.15 m), causing self-detection. With this
+       margin the free distance rises to ~0.27 m. -->
+  <joint name="front_right_laser_joint" type="fixed">
+    <origin xyz="1.20 -0.475 0.2055" rpy="0 0 ${-pi/4}"/>
+    <parent link="chassis_link"/>
+    <child link="front_right_laser_link"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" velocity="100"/>
+  </joint>
+
+  <!-- ================================================================== -->
+  <!-- REAR-LEFT LIDAR (rear-left corner, diagonally opposite)             -->
+  <!-- ================================================================== -->
+  <link name="rear_left_laser_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1e-09"/>
+      <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+      <geometry>
+        <mesh filename="package://agv_description/assets/lidar.stl"/>
+      </geometry>
+      <material name="lidar_material"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+      <geometry>
+        <mesh filename="package://agv_description/assets/lidar.stl"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- Positive Y = left side. Yaw 135 deg: bisector of the rear-left
+       corner, between the rear (-X) and left (+Y) edges. -->
+  <joint name="rear_left_laser_joint" type="fixed">
+    <origin xyz="-1.22 0.475 0.2105" rpy="0 0 ${3*pi/4}"/>
+    <parent link="chassis_link"/>
+    <child link="rear_left_laser_link"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" velocity="100"/>
+  </joint>
+
+</robot>

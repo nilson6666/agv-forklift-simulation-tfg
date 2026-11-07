@@ -1,0 +1,104 @@
+# ========================================================================
+# ROS2 <-> Gazebo bridge for the mecanum AGV
+# ========================================================================
+
+# 1. Clock
+- ros_topic_name: "/clock"
+  gz_topic_name: "/clock"
+  ros_type_name: "rosgraph_msgs/msg/Clock"
+  gz_type_name: "ignition.msgs.Clock"
+  direction: GZ_TO_ROS
+
+# 2. Joint states
+- ros_topic_name: "/joint_states"
+  gz_topic_name: "/joint_states"
+  ros_type_name: "sensor_msgs/msg/JointState"
+  gz_type_name: "ignition.msgs.Model"
+  direction: GZ_TO_ROS
+
+# 3. Velocity command (REQUIRED FOR MECANUM MOTION)
+- ros_topic_name: "/cmd_vel"
+  gz_topic_name: "/cmd_vel"
+  ros_type_name: "geometry_msgs/msg/Twist"
+  gz_type_name: "gz.msgs.Twist"
+  direction: ROS_TO_GZ
+
+# 4. Odometry
+- ros_topic_name: "/odom"
+  gz_topic_name: "/odom"  # or "/model/agv_mecanum/odom", depending on Gazebo
+  ros_type_name: "nav_msgs/msg/Odometry"
+  gz_type_name: "gz.msgs.Odometry"
+  direction: GZ_TO_ROS
+
+# 5. Transforms (TF)
+- ros_topic_name: "/tf"
+  gz_topic_name: "/tf"  # or "/model/agv_mecanum/tf"
+  ros_type_name: "tf2_msgs/msg/TFMessage"
+  gz_type_name: "gz.msgs.Pose_V"
+  direction: GZ_TO_ROS
+
+# ========================================================================
+# LIDARS — 2 units on diagonal corners
+# ========================================================================
+
+# 6.A Front-right lidar
+- ros_topic_name: "/front_lidar/scan"
+  gz_topic_name: "/front_lidar/scan"
+  ros_type_name: "sensor_msgs/msg/LaserScan"
+  gz_type_name: "ignition.msgs.LaserScan"
+  direction: GZ_TO_ROS
+
+# 6.B Rear-left lidar
+- ros_topic_name: "/rear_lidar/scan"
+  gz_topic_name: "/rear_lidar/scan"
+  ros_type_name: "sensor_msgs/msg/LaserScan"
+  gz_type_name: "ignition.msgs.LaserScan"
+  direction: GZ_TO_ROS
+
+# ========================================================================
+# CAMERAS — 2 units (moving mast and fork)
+# ========================================================================
+
+# 7.A Top camera (on the moving mast, tilted slightly downwards)
+- ros_topic_name: "/camera_top/image_raw"
+  gz_topic_name: "/camera_top/image_raw"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "ignition.msgs.Image"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/camera_top/camera_info"
+  gz_topic_name: "/camera_top/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "ignition.msgs.CameraInfo"
+  direction: GZ_TO_ROS
+
+# 7.B Fork camera (between the tines)
+- ros_topic_name: "/camera_fork/image_raw"
+  gz_topic_name: "/camera_fork/image_raw"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "ignition.msgs.Image"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/camera_fork/camera_info"
+  gz_topic_name: "/camera_fork/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "ignition.msgs.CameraInfo"
+  direction: GZ_TO_ROS
+
+# ========================================================================
+# DUPLEX MAST CONTROL
+# ========================================================================
+
+# 8. Moving mast control (stage 1)
+- ros_topic_name: "/mast_cmd"
+  gz_topic_name: "/mast_cmd"
+  ros_type_name: "std_msgs/msg/Float64"
+  gz_type_name: "gz.msgs.Double"
+  direction: ROS_TO_GZ
+
+# 9. Fork control (stage 2)
+- ros_topic_name: "/fork_cmd"
+  gz_topic_name: "/fork_cmd"
+  ros_type_name: "std_msgs/msg/Float64"
+  gz_type_name: "gz.msgs.Double"
+  direction: ROS_TO_GZ

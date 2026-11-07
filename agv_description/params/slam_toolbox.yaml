@@ -1,0 +1,38 @@
+# slam_toolbox (online async) to map the warehouse.
+# Usage:
+#   ros2 launch agv_description gz_empty.launch.py headless:=true \
+#       world:=magatzem.sdf slam:=true
+#   ros2 launch slam_toolbox online_async_launch.py \
+#       slam_params_file:=$(ros2 pkg prefix agv_description)/share/agv_description/params/slam_toolbox.yaml \
+#       use_sim_time:=true
+# Map WITHOUT the trailer or pallets: the map must contain only the
+# permanent building. Note that worlds/magatzem.sdf now includes the
+# trailer, so remapping requires a copy of the world without it.
+slam_toolbox:
+  ros__parameters:
+    use_sim_time: true
+
+    # Frames/topics of this robot
+    odom_frame: odom
+    map_frame: map
+    base_frame: base_footprint_link
+    scan_topic: /scan
+    mode: mapping
+
+    resolution: 0.05
+    # The merged /scan declares range_max 20 m but the real gpu_lidars
+    # reach 10 m — do not accept anything beyond that.
+    max_laser_range: 10.0
+    minimum_time_interval: 0.5
+    transform_publish_period: 0.05
+    # /scan is slow and the machine is limited: process every 0.5 m or
+    # 0.5 rad of motion (reasonable defaults, made explicit)
+    minimum_travel_distance: 0.5
+    minimum_travel_heading: 0.5
+    map_update_interval: 2.0
+    # Generous TF timeout: sim clock + loaded CPU make lookups slow
+    transform_timeout: 0.5
+    tf_buffer_duration: 30.0
+
+    do_loop_closing: true
+    debug_logging: false

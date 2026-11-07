@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<!-- Generated using onshape-to-robot -->
+<!-- Onshape document_id: f29662d0e650ae030781df1d / workspace_id: b19b9cb673a72162998aaff3 -->
+<robot xmlns:xacro = "http://www.ros.org/wiki/xacro">
+    <xacro:property name="package_name" value = "agv_description"/>
+    <xacro:property name="robot_name" value = "my_robot"/>
+</robot>

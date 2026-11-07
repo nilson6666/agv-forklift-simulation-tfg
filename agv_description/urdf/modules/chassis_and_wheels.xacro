@@ -1,0 +1,404 @@
+<?xml version="1.0" ?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ================================================================== -->
+  <!-- WHEEL DIMENSIONS                                                    -->
+  <!-- ================================================================== -->
+  <xacro:property name="wheel_radius" value="0.1778"/>
+  <xacro:property name="wheel_length" value="0.178"/>
+  <xacro:property name="wheel_mass" value="30.2"/>
+
+  <!-- Macro computing the inertia of a cylinder aligned with the local Z axis -->
+  <xacro:macro name="cylinder_inertia" params="m r h">
+    <inertia 
+      ixx="${(1/12)*m*(3*r*r+h*h)}" ixy="0" ixz="0"
+      iyy="${(1/12)*m*(3*r*r+h*h)}" iyz="0"
+      izz="${(1/2)*m*r*r}"/>
+  </xacro:macro>
+  <!-- ================================================================== -->
+  <!-- BASE FOOTPRINT — virtual frame on the floor (robot root)            -->
+  <!-- ================================================================== -->
+  <link name="base_footprint_link"/>
+
+  <joint name="base_joint" type="fixed">
+    <parent link="base_footprint_link"/>
+    <child link="chassis_link"/>
+    <!-- chassis_link sits 0.2068m above the floor so that
+         the wheels (radius 0.1778) touch Z=0 -->
+    <origin xyz="0 0 0.2068" rpy="0 0 0"/>
+  </joint>
+  
+  <!-- ================================================================== -->
+  <!-- CHASSIS                                                             -->
+  <!-- ================================================================== -->
+  <link name="chassis_link">
+    <inertial>
+      <origin xyz="-0.169624 -9.35224e-09 0.443611" rpy="0 0 0"/>
+      <mass value="5267.35"/>
+      <inertia ixx="836.106" ixy="0.217243" ixz="59.6446" iyy="2359.49" iyz="-0.000517498" izz="2319.55"/>
+    </inertial>
+    <visual>
+      <origin xyz="1.03 0.475 0" rpy="0 0 ${pi}"/>
+      <geometry>
+        <mesh filename="package://${package_name}/assets/chassis.stl"/>
+      </geometry>
+      <material name="chassis_material">
+        <color rgba="0.615686 0.811765 0.929412 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="1.03 0.475 0" rpy="0 0 ${pi}"/>
+      <geometry>
+        <mesh filename="package://${package_name}/assets/chassis.stl"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- ================================================================== -->
+  <!-- FIXED MAST                                                          -->
+  <!-- ================================================================== -->
+  <link name="fixed_mast_link">
+    <inertial>
+      <origin xyz="-0.0786 0.363 -0.926693" rpy="0 0 0"/>
+      <mass value="133.004"/>
+      <inertia ixx="53.306" ixy="0" ixz="0" iyy="38.2612" iyz="0" izz="15.9098"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="${-pi/2} 0 ${pi}"/>
+      <geometry>
+        <mesh filename="package://${package_name}/assets/fixed_mast.stl"/>
+      </geometry>
+      <material name="fixed_mast_material">
+        <color rgba="0.972549 0.529412 0.00392157 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="${-pi/2} 0 ${pi}"/>
+      <geometry>
+        <mesh filename="package://${package_name}/assets/fixed_mast.stl"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="fixed_mast_joint" type="fixed">
+    <origin xyz="0.87 -0.363 0" rpy="${pi} 0 ${pi}"/>
+    <parent link="chassis_link"/>
+    <child link="fixed_mast_link"/>
+  </joint>
+
+  <!-- ================================================================== -->
+  <!-- MOVING MAST                                                         -->
+  <!-- ================================================================== -->
+  <link name="moving_mast_link">
+    <inertial>
+      <origin xyz="-0.307562 -0.049 -1.03757" rpy="0 0 0"/>
+      <mass value="90.8635"/>
+      <inertia ixx="41.8922" ixy="0" ixz="0" iyy="50.1077" iyz="0" izz="8.46809"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.00156437 -0.052 -0.81" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://${package_name}/assets/moving_mast.stl"/>
+      </geometry>
+      <material name="moving_mast_material">
+        <color rgba="0.231373 0.380392 0.705882 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.00156437 -0.052 -0.81" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://${package_name}/assets/moving_mast.stl"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="moving_mast_joint" type="prismatic">
+    <origin xyz="-0.0294 0.0552 -0.2" rpy="0 0 ${-pi/2}"/>
+    <parent link="fixed_mast_link"/>
+    <child link="moving_mast_link"/>
+    <axis xyz="0 0 1"/> <limit effort="10000" velocity="1.0" lower="-1.25" upper="0.0"/>
+  </joint>
+
+  <!-- ================================================================== -->
+  <!-- CAMERA SUPPORT (mechanical mount for the mast camera)               -->
+  <!-- ================================================================== -->
+  <link name="camera_suport_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1e-09"/>
+      <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0.08 0" rpy="${pi} 0 0"/>
+      <geometry>
+        <mesh filename="package://${package_name}/assets/camera_suport.stl"/>
+      </geometry>
+      <material name="camera_suport_material">
+        <color rgba="0.615686 0.811765 0.929412 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0.08 0" rpy="${pi} 0 0"/>
+      <geometry>
+        <mesh filename="package://${package_name}/assets/camera_suport.stl"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="camera_suport_joint" type="fixed">
+    <origin xyz="0.0185 -0.098 -2.21" rpy="${pi/2} 0 ${-pi}"/>
+    <parent link="moving_mast_link"/>
+    <child link="camera_suport_link"/>
+  </joint>
+
+  <!-- ================================================================== -->
+  <!-- FORK                                                                -->
+  <!-- ================================================================== -->
+  <link name="fork_link">
+    <inertial>
+      <origin xyz="-0.275813 0.372147 0.104812" rpy="0 0 0"/>
+      <mass value="328.991"/>
+      <inertia ixx="74.2294" ixy="0" ixz="0" iyy="64.7944" iyz="24.2368" izz="52.9936"/>
+    </inertial>
+
+    <!-- Several meshes make up the fork (all part of the same rigid link).
+         Tines (part_6/_mirrored): x origins adjusted from -0.0459831/-0.505644 to
+         -0.088/-0.460 to centre them on the Euro pallet openings (centres
+         at +-186 mm; before they sat at +-230 and went in with only 18 mm of margin). -->
+    <visual>
+      <origin xyz="-0.275814 0.266525 0.0237551" rpy="${pi/2} 0 ${pi/2}"/>
+      <geometry>
+        <mesh filename="package://${package_name}/assets/fork_part_5.stl"/>
+      </geometry>
+      <material name="fork_material">
+        <color rgba="0.796078 0.823529 0.937255 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.275814 0.266525 0.0237551" rpy="${pi/2} 0 ${pi/2}"/>
+      <geometry>
+        <mesh filename="package://${package_name}/assets/fork_part_5.stl"/>
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="-0.275814 0.266525 0.0237551" rpy="${pi/2} 0 ${pi/2}"/>
+      <geometry>
+        <mesh filename="package://${package_name}/assets/fork_part_2.stl"/>
+      </geometry>
+      <material name="fork_material"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.275814 0.266525 0.0237551" rpy="${pi/2} 0 ${pi/2}"/>
+      <geometry>
+        <mesh filename="package://${package_name}/assets/fork_part_2.stl"/>
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="-0.275814 0.266525 0.0237551" rpy="${pi/2} 0 ${pi/2}"/>
+      <geometry>
+        <mesh filename="package://${package_name}/assets/fork_part_4.stl"/>
+      </geometry>
+      <material name="fork_material"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.275814 0.266525 0.0237551" rpy="${pi/2} 0 ${pi/2}"/>
+      <geometry>
+        <mesh filename="package://${package_name}/assets/fork_part_4.stl"/>
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="-0.275814 0.266525 0.0237551" rpy="${pi/2} 0 ${pi/2}"/>
+      <geometry>
+        <mesh filename="package://${package_name}/assets/fork_part_1.stl"/>
+      </geometry>
+      <material name="fork_material"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.275814 0.266525 0.0237551" rpy="${pi/2} 0 ${pi/2}"/>
+      <geometry>
+        <mesh filename="package://${package_name}/assets/fork_part_1.stl"/>
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="-0.275814 0.266525 0.0237551" rpy="${pi/2} 0 ${pi/2}"/>
+      <geometry>
+        <mesh filename="package://${package_name}/assets/fork_part_3.stl"/>
+      </geometry>
+      <material name="fork_material"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.275814 0.266525 0.0237551" rpy="${pi/2} 0 ${pi/2}"/>
+      <geometry>
+        <mesh filename="package://${package_name}/assets/fork_part_3.stl"/>
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="-0.088 0.292627 -0.316923" rpy="${pi/2} 0 ${-pi/2}"/>
+      <geometry>
+        <mesh filename="package://${package_name}/assets/fork_part_6.stl"/>
+      </geometry>
+      <material name="fork_material"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.088 0.292627 -0.316923" rpy="${pi/2} 0 ${-pi/2}"/>
+      <geometry>
+        <mesh filename="package://${package_name}/assets/fork_part_6.stl"/>
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="-0.460 0.292627 -0.316923" rpy="${pi/2} 0 ${-pi/2}"/>
+      <geometry>
+        <mesh filename="package://${package_name}/assets/fork_part_6_mirrored.stl"/>
+      </geometry>
+      <material name="fork_material"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.460 0.292627 -0.316923" rpy="${pi/2} 0 ${-pi/2}"/>
+      <geometry>
+        <mesh filename="package://${package_name}/assets/fork_part_6_mirrored.stl"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="fork_joint" type="prismatic">
+    <origin xyz="-0.0340524 -0.0136849 -0.15" rpy="${pi} 0 0"/>
+    <parent link="moving_mast_link"/>
+    <child link="fork_link"/>
+    <!-- lower=-0.15: free lift — lets the tine go down to 0.03 m above the floor
+         (at fork=0 the tine base is at 0.18 m; the pallet pocket is at 0.022-0.100) -->
+    <axis xyz="0 0 1"/> <limit effort="10000" velocity="1.0" lower="-0.15" upper="1.25"/>
+  </joint>
+
+  <!-- ================================================================== -->
+  <!-- WHEELS (mecanum) — cylinder for collision and inertia               -->
+  <!-- ================================================================== -->
+
+  <!-- FRONT RIGHT WHEEL -->
+  <link name="front_right_wheel_link">
+    <inertial>
+      <origin xyz="0 0 -0.0836" rpy="0 0 0"/>
+      <mass value="${wheel_mass}"/>
+      <xacro:cylinder_inertia m="${wheel_mass}" r="${wheel_radius}" h="${wheel_length}"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 -0.2145 0.128" rpy="${-pi/2} ${-pi/2} 0"/>
+      <geometry>
+        <mesh filename="package://${package_name}/assets/wheel_left.stl"/>
+      </geometry>
+      <material name="wheel_material">
+        <color rgba="0.866667 0.909804 1 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${-0.2145/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${wheel_radius}" length="${wheel_length}"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="front_right_wheel_joint" type="continuous">
+    <origin xyz="0.7 -0.522 -0.029" rpy="${-pi/2} ${-pi/2} 0"/>
+    <parent link="chassis_link"/>
+    <child link="front_right_wheel_link"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="10000" velocity="1000"/>
+  </joint>
+
+  <!-- FRONT LEFT WHEEL -->
+  <link name="front_left_wheel_link">
+    <inertial>
+      <origin xyz="0 0 -0.0836" rpy="0 0 0"/>
+      <mass value="${wheel_mass}"/>
+      <xacro:cylinder_inertia m="${wheel_mass}" r="${wheel_radius}" h="${wheel_length}"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0.2145 0.128" rpy="${pi/2} ${pi/2} 0"/>
+      <geometry>
+        <mesh filename="package://${package_name}/assets/wheel_right.stl"/>
+      </geometry>
+      <material name="wheel_material"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${-0.2145/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${wheel_radius}" length="${wheel_length}"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="front_left_wheel_joint" type="continuous">
+    <origin xyz="0.7 0.512 -0.029" rpy="${pi/2} ${-pi/2} 0"/>
+    <parent link="chassis_link"/>
+    <child link="front_left_wheel_link"/>
+    <axis xyz="0 0 -1"/>
+    <limit effort="10000" velocity="1000"/>
+  </joint>
+
+  <!-- REAR LEFT WHEEL -->
+  <link name ="rear_left_wheel_link">
+    <inertial>
+      <origin xyz="0 0 -0.0836" rpy="0 0 0"/>
+      <mass value="${wheel_mass}"/>
+      <xacro:cylinder_inertia m="${wheel_mass}" r="${wheel_radius}" h="${wheel_length}"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 -0.2145 0.128" rpy="${-pi/2} ${-pi/2} 0"/>
+      <geometry>
+        <mesh filename="package://${package_name}/assets/wheel_left.stl"/>
+      </geometry>
+      <material name="wheel_material"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${-0.2145/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${wheel_radius}" length="${wheel_length}"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="rear_left_wheel_joint" type="continuous">
+    <origin xyz="-0.7 0.512 -0.029" rpy="${pi/2} ${-pi/2} 0"/>
+    <parent link="chassis_link"/>
+    <child link="rear_left_wheel_link"/>
+    <axis xyz="0 0 -1"/>
+    <limit effort="10000" velocity="1000"/>
+  </joint>
+
+  <!-- REAR RIGHT WHEEL -->
+  <link name="rear_right_wheel_link">
+    <inertial>
+      <origin xyz="0 0 -0.0836" rpy="0 0 0"/>
+      <mass value="${wheel_mass}"/>
+      <xacro:cylinder_inertia m="${wheel_mass}" r="${wheel_radius}" h="${wheel_length}"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0.2145 0.128" rpy="${pi/2} ${pi/2} 0"/>
+      <geometry>
+        <mesh filename="package://${package_name}/assets/wheel_right.stl"/>
+      </geometry>
+      <material name="wheel_material"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${-0.2145/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${wheel_radius}" length="${wheel_length}"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="rear_right_wheel_joint" type="continuous">
+    <origin xyz="-0.7 -0.522 -0.029" rpy="${-pi/2} ${-pi/2} 0"/>
+    <parent link="chassis_link"/>
+    <child link="rear_right_wheel_link"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="10000" velocity="1000"/>
+  </joint>
+
+</robot>

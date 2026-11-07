@@ -1,0 +1,292 @@
+# Nav2 for the mecanum AGV forklift (guided navigation + AMCL).
+#
+# Key decisions:
+# - AMCL with OmniMotionModel (holonomic mecanum base).
+# - T-shaped POLYGON footprint: the body spans [-1.26,1.24]x[-0.70,0.69]
+#   but the TINES reach x=+2.41 (y ±0.25) — measured from the URDF meshes.
+#   A radius does not work: the costmap must know about the tines.
+# - MPPI controller with the Omni motion_model. Limits 1.5 m/s / 1.5 rad/s.
+# - Moderate rates (CPU-limited machine, low /scan rate): controller
+#   10 Hz, local costmap 3 Hz, global 1 Hz.
+# - model_dt 0.1 = 1/controller_frequency (recommended for MPPI).
+# - MPPI horizon: 24 steps x 0.1 s = 2.4 s → 3.6 m at 1.5 m/s. The local
+#   costmap is 7x7 m (radius 3.5) so the trajectories fit inside it.
+# - Known CAVEAT: dual_laser_merger does NOT publish /scan when the merged
+#   cloud is empty. In the warehouse there are always walls within 10 m,
+#   but keep this in mind if the local costmap ever stops clearing.
+
+amcl:
+  ros__parameters:
+    use_sim_time: true
+    base_frame_id: base_footprint_link
+    odom_frame_id: odom
+    global_frame_id: map
+    robot_model_type: "nav2_amcl::OmniMotionModel"
+    scan_topic: scan
+    # The lidars really reach 10 m (/scan declares 20) — same criterion as
+    # max_laser_range in slam_toolbox.yaml.
+    laser_max_range: 10.0
+    laser_min_range: 0.15
+    laser_model_type: "likelihood_field"
+    max_beams: 60
+    min_particles: 500
+    max_particles: 2000
+    # Omni motion model noise (alpha1..alpha5). Odometry is Gazebo ground
+    # truth (zero drift); standard conservative values.
+    alpha1: 0.2
+    alpha2: 0.2
+    alpha3: 0.2
+    alpha4: 0.2
+    alpha5: 0.2
+    update_min_d: 0.1
+    update_min_a: 0.1
+    resample_interval: 1
+    transform_tolerance: 0.5
+    recovery_alpha_slow: 0.0
+    recovery_alpha_fast: 0.0
+    z_hit: 0.5
+    z_rand: 0.5
+    sigma_hit: 0.2
+    do_beamskip: false
+    tf_broadcast: true
+    # The robot spawns at world (0,0) and the map was built starting there
+    # → map frame ≈ world. So AMCL starts localised on its own, without a
+    # "2D Pose Estimate" in RViz (one can still be given if needed).
+    set_initial_pose: true
+    initial_pose:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      yaw: 0.0
+
+map_server:
+  ros__parameters:
+    use_sim_time: true
+    # yaml_filename is passed from nav2.launch.py (share path).
+
+bt_navigator:
+  ros__parameters:
+    use_sim_time: true
+    global_frame: map
+    robot_base_frame: base_footprint_link
+    odom_topic: /odom
+    bt_loop_duration: 10
+    default_server_timeout: 20
+
+planner_server:
+  ros__parameters:
+    use_sim_time: true
+    expected_planner_frequency: 1.0
+    planner_plugins: ["GridBased"]
+    GridBased:
+      plugin: "nav2_navfn_planner::NavfnPlanner"
+      tolerance: 0.5
+      use_astar: false
+      allow_unknown: true
+
+controller_server:
+  ros__parameters:
+    use_sim_time: true
+    controller_frequency: 10.0
+    min_x_velocity_threshold: 0.001
+    min_y_velocity_threshold: 0.001
+    min_theta_velocity_threshold: 0.001
+    failure_tolerance: 0.5
+    progress_checker_plugin: "progress_checker"
+    goal_checker_plugins: ["general_goal_checker"]
+    controller_plugins: ["FollowPath"]
+    progress_checker:
+      plugin: "nav2_controller::SimpleProgressChecker"
+      required_movement_radius: 0.5
+      movement_time_allowance: 20.0
+    general_goal_checker:
+      plugin: "nav2_controller::SimpleGoalChecker"
+      # Loose tolerances on purpose: the fine approach to the pallet is
+      # done by the AprilTag visual servo, not by Nav2.
+      # Exception: yaw_goal_tolerance is strict (0.05 rad = 2.9°). The mast
+      # camera reads the tag at the NavAproximacio pose, BEFORE the servo,
+      # and a ~8° yaw error added to camera_top's 20° tilt leaves the tag
+      # too oblique to decode.
+      xy_goal_tolerance: 0.15
+      yaw_goal_tolerance: 0.05
+      stateful: True
+    FollowPath:
+      plugin: "nav2_mppi_controller::MPPIController"
+      motion_model: "Omni"
+      time_steps: 24
+      model_dt: 0.1
+      # batch_size reduced (default 2000) to save CPU; raise it if the
+      # trajectories look poor and the machine can cope.
+      batch_size: 1000
+      vx_std: 0.2
+      vy_std: 0.2
+      wz_std: 0.4
+      vx_max: 1.5
+      vx_min: -1.5
+      vy_max: 1.5
+      wz_max: 1.5
+      ax_max: 3.0
+      ax_min: -3.0
+      ay_max: 3.0
+      ay_min: -3.0
+      az_max: 3.5
+      iteration_count: 1
+      prune_distance: 2.0
+      transform_tolerance: 0.3
+      temperature: 0.3
+      gamma: 0.015
+      visualize: false
+      critics: ["ConstraintCritic", "CostCritic", "GoalCritic", "GoalAngleCritic", "PathAlignCritic", "PathFollowCritic", "PathAngleCritic", "PreferForwardCritic"]
+      ConstraintCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 4.0
+      CostCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 3.81
+        critical_cost: 300.0
+        consider_footprint: true
+        collision_cost: 1000000.0
+      GoalCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 5.0
+        threshold_to_consider: 1.4
+      GoalAngleCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 3.0
+        threshold_to_consider: 0.5
+      PathAlignCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 14.0
+        max_path_occupancy_ratio: 0.05
+        trajectory_point_step: 4
+        threshold_to_consider: 0.5
+        offset_from_furthest: 20
+        use_path_orientations: false
+      PathFollowCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 5.0
+        offset_from_furthest: 5
+        threshold_to_consider: 1.4
+      PathAngleCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 2.0
+        offset_from_furthest: 4
+        threshold_to_consider: 0.5
+        max_angle_to_furthest: 1.0
+      PreferForwardCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 5.0
+        threshold_to_consider: 0.5
+
+behavior_server:
+  ros__parameters:
+    use_sim_time: true
+    local_costmap_topic: local_costmap/costmap_raw
+    global_costmap_topic: global_costmap/costmap_raw
+    local_footprint_topic: local_costmap/published_footprint
+    global_footprint_topic: global_costmap/published_footprint
+    cycle_frequency: 5.0
+    behavior_plugins: ["spin", "backup", "drive_on_heading", "wait"]
+    spin:
+      plugin: "nav2_behaviors::Spin"
+    backup:
+      plugin: "nav2_behaviors::BackUp"
+    drive_on_heading:
+      plugin: "nav2_behaviors::DriveOnHeading"
+    wait:
+      plugin: "nav2_behaviors::Wait"
+    local_frame: odom
+    global_frame: map
+    robot_base_frame: base_footprint_link
+    transform_tolerance: 0.3
+    simulate_ahead_time: 2.0
+    max_rotational_vel: 1.5
+    min_rotational_vel: 0.2
+    rotational_acc_lim: 3.0
+
+# T-shaped footprint (counter-clockwise): body [-1.28,1.26]x[-0.72,0.72] +
+# tine tab up to x=2.43, y ±0.27 (~2 cm of margin over the real size).
+# Nav2 accepts concave polygons.
+global_costmap:
+  global_costmap:
+    ros__parameters:
+      use_sim_time: true
+      update_frequency: 1.0
+      publish_frequency: 1.0
+      global_frame: map
+      robot_base_frame: base_footprint_link
+      footprint: "[[-1.28,-0.72],[-1.28,0.72],[1.26,0.72],[1.26,0.27],[2.43,0.27],[2.43,-0.27],[1.26,-0.27],[1.26,-0.72]]"
+      resolution: 0.05
+      track_unknown_space: true
+      plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+      static_layer:
+        plugin: "nav2_costmap_2d::StaticLayer"
+        map_subscribe_transient_local: True
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: True
+        observation_sources: scan
+        scan:
+          topic: /scan
+          max_obstacle_height: 2.0
+          clearing: True
+          marking: True
+          data_type: "LaserScan"
+          raytrace_max_range: 10.0
+          raytrace_min_range: 0.0
+          obstacle_max_range: 9.0
+          obstacle_min_range: 0.0
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        cost_scaling_factor: 3.0
+        # >= CIRCUMSCRIBED radius of the footprint (2.456 m, long because of
+        # the tines): below that the costmap keeps logging ERRORs and MPPI's
+        # collision checker loses the potential-field optimisation (it
+        # checks the whole footprint at every candidate pose). The cost
+        # decays as exp(-3·d) and is negligible beyond 1.5 m: it does not
+        # block aisles, it only pulls paths towards the centre.
+        inflation_radius: 2.5
+      always_send_full_costmap: True
+
+local_costmap:
+  local_costmap:
+    ros__parameters:
+      use_sim_time: true
+      update_frequency: 3.0
+      publish_frequency: 2.0
+      global_frame: odom
+      robot_base_frame: base_footprint_link
+      rolling_window: true
+      width: 7
+      height: 7
+      resolution: 0.05
+      footprint: "[[-1.28,-0.72],[-1.28,0.72],[1.26,0.72],[1.26,0.27],[2.43,0.27],[2.43,-0.27],[1.26,-0.27],[1.26,-0.72]]"
+      plugins: ["obstacle_layer", "inflation_layer"]
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: True
+        observation_sources: scan
+        scan:
+          topic: /scan
+          max_obstacle_height: 2.0
+          clearing: True
+          marking: True
+          data_type: "LaserScan"
+          raytrace_max_range: 10.0
+          raytrace_min_range: 0.0
+          obstacle_max_range: 9.0
+          obstacle_min_range: 0.0
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        cost_scaling_factor: 3.0
+        # Same criterion as the global costmap (>= circumscribed radius 2.456).
+        inflation_radius: 2.5
+      always_send_full_costmap: True

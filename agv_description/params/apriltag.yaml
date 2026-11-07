@@ -1,0 +1,25 @@
+# apriltag_ros for the fork camera (visual servo for docking).
+#
+# - size 0.096: the tag face on the pallet is 0.120 m, but the PNG has
+#   10x10 cells and apriltag's "size" is the outer BLACK square (8 of 10
+#   cells) = 0.8 x 0.120. Verified empirically against ground truth.
+# - decimate 1.0 (default 2.0): at 640x480 the tag was only ~34 px at
+#   1.5 m (fx~528); halving the image would leave the quad too small and
+#   the pose too noisy. The CPU cost is acceptable.
+# - The node publishes /tf: fork_camera_optical_link -> tag36h11:<id>
+#   (the parent comes from the camera_info header.frame_id, which gz
+#   fills with the URDF's <optical_frame_id>).
+/**:
+    ros__parameters:
+        image_transport: raw
+        family: 36h11
+        size: 0.096
+        max_hamming: 0
+        detector:
+            threads: 2
+            decimate: 1.0
+            blur: 0.0
+            refine: true
+            sharpening: 0.25
+            debug: false
+        pose_estimation_method: "pnp"

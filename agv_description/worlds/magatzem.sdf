@@ -1,0 +1,169 @@
+<?xml version="1.0" ?>
+<!--
+  Closed warehouse for SLAM/Nav2.
+  Interior: x [-8, 20], y [-6, 10] (28 x 16 m) - fits the 12 m trailer
+  included at (6,3) (extends to x=18, side edge at y=3.245) with room
+  for the AGV to manoeuvre. The trailer is models/trailer (static).
+  2.5 m walls (the lidars scan at z=0.21, any height works).
+  ASYMMETRIC columns and partition on purpose: a plain rectangle is
+  ambiguous under 180 degree rotation for AMCL/SLAM; these features make
+  it unique.
+  Boxes only: cheap raycasting for the gpu_lidars.
+-->
+<sdf version="1.8">
+    <world name="magatzem">
+        <physics name="1ms" type="ignored">
+            <max_step_size>0.001</max_step_size>
+            <real_time_factor>1.0</real_time_factor>
+        </physics>
+        <plugin filename="libignition-gazebo-physics-system" name="ignition::gazebo::systems::Physics"/>
+        <plugin filename="libignition-gazebo-user-commands-system" name="ignition::gazebo::systems::UserCommands"/>
+        <plugin filename="libignition-gazebo-scene-broadcaster-system" name="ignition::gazebo::systems::SceneBroadcaster"/>
+
+        <scene>
+            <shadows>false</shadows>
+            <grid>true</grid>
+        </scene>
+
+        <light type="directional" name="sun">
+            <cast_shadows>false</cast_shadows>
+            <pose>0 0 10 0 0 0</pose>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+            <specular>0.2 0.2 0.2 1</specular>
+            <direction>-0.5 0.1 -0.9</direction>
+        </light>
+
+        <model name="ground_plane">
+            <static>true</static>
+            <link name="link">
+                <collision name="collision">
+                    <geometry>
+                        <plane>
+                            <normal>0 0 1</normal>
+                            <size>100 100</size>
+                        </plane>
+                    </geometry>
+                </collision>
+                <visual name="visual">
+                    <geometry>
+                        <plane>
+                            <normal>0 0 1</normal>
+                            <size>100 100</size>
+                        </plane>
+                    </geometry>
+                    <material>
+                        <ambient>0.8 0.8 0.8 1</ambient>
+                        <diffuse>0.8 0.8 0.8 1</diffuse>
+                        <specular>0.8 0.8 0.8 1</specular>
+                    </material>
+                </visual>
+            </link>
+        </model>
+
+        <model name="parets_magatzem">
+            <static>true</static>
+            <link name="parets">
+                <!-- North wall (y = +10): 6.75 m aisle between the trailer edge (y=3.245) and the wall, to manoeuvre with a pallet   -->
+                <collision name="paret_nord_col">
+                    <pose>6 10.1 1.25 0 0 0</pose>
+                    <geometry><box><size>28.4 0.2 2.5</size></box></geometry>
+                </collision>
+                <visual name="paret_nord_vis">
+                    <pose>6 10.1 1.25 0 0 0</pose>
+                    <geometry><box><size>28.4 0.2 2.5</size></box></geometry>
+                    <material>
+                        <ambient>0.5 0.5 0.55 1</ambient>
+                        <diffuse>0.6 0.6 0.65 1</diffuse>
+                    </material>
+                </visual>
+                <!-- South wall (y = -6) -->
+                <collision name="paret_sud_col">
+                    <pose>6 -6.1 1.25 0 0 0</pose>
+                    <geometry><box><size>28.4 0.2 2.5</size></box></geometry>
+                </collision>
+                <visual name="paret_sud_vis">
+                    <pose>6 -6.1 1.25 0 0 0</pose>
+                    <geometry><box><size>28.4 0.2 2.5</size></box></geometry>
+                    <material>
+                        <ambient>0.5 0.5 0.55 1</ambient>
+                        <diffuse>0.6 0.6 0.65 1</diffuse>
+                    </material>
+                </visual>
+                <!-- East wall (x = +20) -->
+                <collision name="paret_est_col">
+                    <pose>20.1 2 1.25 0 0 0</pose>
+                    <geometry><box><size>0.2 16.4 2.5</size></box></geometry>
+                </collision>
+                <visual name="paret_est_vis">
+                    <pose>20.1 2 1.25 0 0 0</pose>
+                    <geometry><box><size>0.2 16.4 2.5</size></box></geometry>
+                    <material>
+                        <ambient>0.5 0.5 0.55 1</ambient>
+                        <diffuse>0.6 0.6 0.65 1</diffuse>
+                    </material>
+                </visual>
+                <!-- West wall (x = -8)  -->
+                <collision name="paret_oest_col">
+                    <pose>-8.1 2 1.25 0 0 0</pose>
+                    <geometry><box><size>0.2 16.4 2.5</size></box></geometry>
+                </collision>
+                <visual name="paret_oest_vis">
+                    <pose>-8.1 2 1.25 0 0 0</pose>
+                    <geometry><box><size>0.2 16.4 2.5</size></box></geometry>
+                    <material>
+                        <ambient>0.5 0.5 0.55 1</ambient>
+                        <diffuse>0.6 0.6 0.65 1</diffuse>
+                    </material>
+                </visual>
+                <!-- Partition from the north wall (x=-2, from y=10 to y=7.2):
+                     breaks the symmetry of the wall ring -->
+                <collision name="enva_col">
+                    <pose>-2 8.6 1.25 0 0 0</pose>
+                    <geometry><box><size>0.2 2.8 2.5</size></box></geometry>
+                </collision>
+                <visual name="enva_vis">
+                    <pose>-2 8.6 1.25 0 0 0</pose>
+                    <geometry><box><size>0.2 2.8 2.5</size></box></geometry>
+                    <material>
+                        <ambient>0.55 0.45 0.4 1</ambient>
+                        <diffuse>0.65 0.55 0.5 1</diffuse>
+                    </material>
+                </visual>
+                <!-- Column A (outside the trailer aisle)      -->
+                <collision name="columna_a_col">
+                    <pose>-3 -3 1.25 0 0 0</pose>
+                    <geometry><box><size>0.4 0.4 2.5</size></box></geometry>
+                </collision>
+                <visual name="columna_a_vis">
+                    <pose>-3 -3 1.25 0 0 0</pose>
+                    <geometry><box><size>0.4 0.4 2.5</size></box></geometry>
+                    <material>
+                        <ambient>0.45 0.45 0.5 1</ambient>
+                        <diffuse>0.55 0.55 0.6 1</diffuse>
+                    </material>
+                </visual>
+                <!-- Column B  -->
+                <collision name="columna_b_col">
+                    <pose>13 -3.5 1.25 0 0 0</pose>
+                    <geometry><box><size>0.4 0.4 2.5</size></box></geometry>
+                </collision>
+                <visual name="columna_b_vis">
+                    <pose>13 -3.5 1.25 0 0 0</pose>
+                    <geometry><box><size>0.4 0.4 2.5</size></box></geometry>
+                    <material>
+                        <ambient>0.45 0.45 0.5 1</ambient>
+                        <diffuse>0.55 0.55 0.6 1</diffuse>
+                    </material>
+                </visual>
+            </link>
+        </model>
+
+        <!-- Trailer (static model, agv_description/models/trailer). Pallets
+             are added with scripts/spawn_palets.py. -->
+        <include>
+            <uri>model://trailer</uri>
+            <name>trailer</name>
+            <pose>6 3 0 0 0 0</pose>
+        </include>
+    </world>
+</sdf>

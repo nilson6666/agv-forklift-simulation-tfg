@@ -1,0 +1,269 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  
+  <!-- Gazebo plugins for the AGV (drive, odometry, joints, sensors) -->
+  
+  <!-- ================================================================== -->
+  <!-- MECANUM DRIVE — omnidirectional control via cmd_vel                 -->
+  <!-- ================================================================== -->
+  <gazebo>
+    <plugin filename="gz-sim-mecanum-drive-system"
+            name="gz::sim::systems::MecanumDrive">
+      <!-- Wheel joints -->
+      <front_left_joint>front_left_wheel_joint</front_left_joint>
+      <front_right_joint>front_right_wheel_joint</front_right_joint>
+      <back_left_joint>rear_left_wheel_joint</back_left_joint>
+      <back_right_joint>rear_right_wheel_joint</back_right_joint>
+      
+      <!-- Wheel geometry -->
+      <wheel_separation>1.034</wheel_separation>
+      <wheelbase>1.4</wheelbase>
+      <wheel_radius>${wheel_radius}</wheel_radius>
+      
+      <!-- Acceleration limits — REQUIRED for motion    -->
+      <min_acceleration>-10</min_acceleration>
+      <max_acceleration>10</max_acceleration>
+      
+      <!-- Topics. CAREFUL: this plugin CANNOT be silenced (the
+           publish_odom/publish_odom_tf tags belong to gazebo_ros/Classic
+           and gz-sim IGNORES them: /odom and /tf had 2 publishers and
+           showed a ~1 degree yaw sawtooth while turning).
+           Its wheel odometry is redirected to odom_wheels/tf_wheels
+           (not bridged, never reaches ROS); the single source of /odom
+           and /tf is the OdometryPublisher below. -->
+      <topic>cmd_vel</topic>
+      <odom_topic>odom_wheels</odom_topic>
+      <tf_topic>tf_wheels</tf_topic>
+      <frame_id>odom</frame_id>
+      <child_frame_id>base_footprint_link</child_frame_id>
+      <odom_publish_frequency>50</odom_publish_frequency>
+    </plugin>
+  </gazebo>
+
+  <!-- ================================================================== -->
+  <!-- ODOMETRY PUBLISHER — workaround because MecanumDrive odom         -->
+  <!-- is broken in Gazebo Harmonic                                       -->
+  <!-- ================================================================== -->
+  <gazebo>
+    <plugin filename="gz-sim-odometry-publisher-system"
+            name="gz::sim::systems::OdometryPublisher">
+            <odom_topic>odom</odom_topic>
+            <odom_frame>odom</odom_frame>
+            <robot_base_frame>base_footprint_link</robot_base_frame>
+            <publish_tf>true</publish_tf>
+            <tf_topic>tf</tf_topic>
+            <odom_publish_frequency>50</odom_publish_frequency>
+    </plugin>
+  </gazebo>
+
+  <!-- ================================================================== -->
+  <!-- JOINT STATE PUBLISHER                                               -->
+  <!-- ================================================================== -->
+  <gazebo>
+    <plugin filename="gz-sim-joint-state-publisher-system" 
+            name="gz::sim::systems::JointStatePublisher">
+      <topic>joint_states</topic>
+      <joint_name>front_left_wheel_joint</joint_name>
+      <joint_name>front_right_wheel_joint</joint_name>
+      <joint_name>rear_left_wheel_joint</joint_name>
+      <joint_name>rear_right_wheel_joint</joint_name>
+      <joint_name>fork_joint</joint_name>
+      <joint_name>moving_mast_joint</joint_name>
+    </plugin>
+  </gazebo>
+
+  <!-- ================================================================== -->
+  <!-- JOINT POSITION CONTROLLERS — moving mast and fork                  -->
+  <!-- ================================================================== -->
+  <gazebo>
+    <plugin filename="gz-sim-joint-position-controller-system"
+            name="gz::sim::systems::JointPositionController">
+      <joint_name>moving_mast_joint</joint_name>
+      <topic>mast_cmd</topic>
+      <!-- Same recipe as the fork but with an INVERTED AXIS (the joint z
+           points DOWN in the world; negative = up): NEGATIVE cmd_offset
+           = gravity feed-forward to hold
+           fork(329)+moving_mast(91) = 419.85 kg x 9.8 = 4115 N.
+           Internal sign of the gz PID: here holding the weight needs a
+           POSITIVE I term -> clamp [0, +1000] (mirror of the fork: never
+           pushes down, can lift the pallet residual). tau = p/i = 2.5 s.
+           If masses change in the URDF, recompute cmd_offset. -->
+      <p_gain>25000</p_gain>    <i_gain>10000</i_gain>    <d_gain>4500</d_gain>
+      <i_max>1000</i_max>       <i_min>0</i_min>
+      <cmd_offset>-4115</cmd_offset>
+      <cmd_max>60000</cmd_max>  <cmd_min>-60000</cmd_min>
+    </plugin>
+  </gazebo>
+
+  <gazebo>
+    <plugin filename="gz-sim-joint-position-controller-system"
+            name="gz::sim::systems::JointPositionController">
+      <joint_name>fork_joint</joint_name>
+      <topic>fork_cmd</topic>
+      <!-- cmd_offset = gravity feed-forward: fork = 329 kg (URDF)
+           = 3225 N. Without it the PID got stuck with error = weight/p ≈ 7 cm
+           (or, with a high I only, it dipped ~80 mm on long descents
+           while the I term recharged, tau = p/i = 3 s).
+           The I term only pays the residual (19 kg pallet = 186 N, friction).
+           Internal sign of the gz PID: lifting = negative I term, hence
+           the clamp is [-1000, 0]: it never pushes down (windup on
+           descents) but can lift the pallet. If the fork mass changes in
+           the URDF, cmd_offset must be updated. -->
+      <p_gain>45000</p_gain>     <i_gain>15000</i_gain>    <d_gain>5000</d_gain>
+      <i_max>0</i_max>           <i_min>-1000</i_min>
+      <cmd_offset>3225</cmd_offset>
+      <cmd_max>60000</cmd_max>
+      <cmd_min>-60000</cmd_min>
+    </plugin>
+  </gazebo>
+
+  <!-- ================================================================== -->
+  <!-- SENSORS SYSTEM                                                      -->
+  <!-- ================================================================== -->
+  <gazebo>
+    <plugin filename="gz-sim-sensors-system" 
+            name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+  </gazebo>
+
+  <!-- ================================================================== -->
+  <!-- FRONT-RIGHT LIDAR — 270 deg / 720 samples, overlaps the rear one    -->
+  <!-- to cover 360 deg without blind spots                               -->
+  <!-- ================================================================== -->
+  <gazebo reference="front_right_laser_link">
+    <!-- The lidar's own housing (link visual) is outside visibility bit 0,
+         and the sensor only looks at bit 0: so the LiDAR ignores its own
+         housing and does not produce a phantom ring. -->
+    <visual>
+      <visibility_flags>4294967294</visibility_flags>
+    </visual>
+    <sensor name="front_right_lidar" type="gpu_lidar">
+      <pose>0 0 0 0 0 0</pose>
+      <topic>/front_lidar/scan</topic>
+      <!-- 4 Hz (not 10) to save CPU/GPU: gpu_lidar also renders, and Nav2
+           does not need 10 Hz at low speed. -->
+      <update_rate>4</update_rate>
+      <visualize>true</visualize>
+      <lidar>
+        <scan>
+          <horizontal>
+            <samples>720</samples>
+            <resolution>1</resolution>
+            <min_angle>-2.3562</min_angle>
+            <max_angle>2.3562</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.15</min>
+          <max>10.0</max>
+          <resolution>0.01</resolution>
+        </range>
+        <visibility_mask>1</visibility_mask>
+      </lidar>
+    </sensor>
+  </gazebo>
+
+  <!-- ================================================================== -->
+  <!-- REAR-LEFT LIDAR — 270 deg / 720 samples, overlaps the front one    -->
+  <!-- to cover 360 deg without blind spots                               -->
+  <!-- ================================================================== -->
+  <gazebo reference="rear_left_laser_link">
+    <!-- Same trick as the front lidar: hides the sensor's own housing so
+         it does not detect itself. -->
+    <visual>
+      <visibility_flags>4294967294</visibility_flags>
+    </visual>
+    <sensor name="rear_left_lidar" type="gpu_lidar">
+      <pose>0 0 0 0 0 0</pose>
+      <topic>/rear_lidar/scan</topic>
+      <!-- 4 Hz: same reason as the front lidar. -->
+      <update_rate>4</update_rate>
+      <visualize>true</visualize>
+      <lidar>
+        <scan>
+          <horizontal>
+            <samples>720</samples>
+            <resolution>1</resolution>
+            <min_angle>-2.3562</min_angle>
+            <max_angle>2.3562</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.15</min>
+          <max>10.0</max>
+          <resolution>0.01</resolution>
+        </range>
+        <visibility_mask>1</visibility_mask>
+      </lidar>
+    </sensor>
+  </gazebo>
+
+  <!-- ================================================================== -->
+  <!-- MAST CAMERA (on the moving mast, tilted downwards)                  -->
+  <!-- ================================================================== -->
+  <gazebo reference="mast_camera_link">
+    <sensor name="mast_camera" type="camera">
+      <pose>0 0 0 0 0 0</pose>
+      <visualize>true</visualize>
+      <!-- 2 Hz to save CPU/RAM: with Gazebo+Nav2+2 apriltag_node+BT running
+           together the camera dropped to 0 Hz. It is enough for tag
+           detection with the robot nearly still. -->
+      <update_rate>2</update_rate>
+      <topic>camera_top/image_raw</topic>
+      <!-- 1280x960: at 640x480, at the NavAproximacio distance (where
+           EstimarAlcadaMastil reads the tag, before any correction) the
+           tag is too small and detection fails depending on the tag id.
+           The alternative, moving the approach pose closer, would change
+           the navigation geometry calibrated against the trailer. -->
+      <camera>
+        <horizontal_fov>1.089</horizontal_fov>
+        <image>
+          <format>R8G8B8</format>
+          <width>1280</width>
+          <height>960</height>
+        </image>
+        <clip>
+          <near>0.05</near>
+          <far>8.0</far>
+        </clip>
+        <optical_frame_id>mast_camera_optical_link</optical_frame_id>
+      </camera>
+    </sensor>
+  </gazebo>
+
+  <!-- ================================================================== -->
+  <!-- FORK CAMERA (between the fork tines)                                -->
+  <!-- ================================================================== -->
+  <gazebo reference="fork_camera_link">
+    <sensor name="fork_camera" type="camera">
+      <pose>0 0 0 0 0 0</pose>
+      <visualize>true</visualize>
+      <!-- 2 Hz: same reason as mast_camera. -->
+      <update_rate>2</update_rate>
+      <topic>camera_fork/image_raw</topic>
+      <!-- 1280x960: AprilTag needs >= ~5 px per tag cell. At 640x480, at
+           ~2.8 m (AlinearAmbPila distance) the tag was ~3.8 px/cell and
+           was not detected; doubling the resolution gives ~7.6. -->
+      <camera>
+        <horizontal_fov>1.089</horizontal_fov>
+        <image>
+          <format>R8G8B8</format>
+          <width>1280</width>
+          <height>960</height>
+        </image>
+        <clip>
+          <near>0.05</near>
+          <far>8.0</far>
+        </clip>
+        <optical_frame_id>fork_camera_optical_link</optical_frame_id>
+      </camera>
+    </sensor>
+  </gazebo>
+
+  <!--
+    NOTE: <scene> REMOVED — it must not be inside a model, it belongs in
+    the world SDF. It caused warnings in Gazebo.
+  -->
+
+</robot>

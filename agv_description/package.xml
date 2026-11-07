@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>agv_description</name>
+  <version>1.0.0</version>
+  <description>
+    Simulation of a mecanum-wheeled AGV forklift (duplex mast and fork) in
+    ROS 2 Jazzy + Gazebo Harmonic: robot description, warehouse world with a
+    trailer and pallets, SLAM, Nav2 navigation with AMCL, AprilTag-based
+    pallet docking and a py_trees behaviour tree that unloads and stacks
+    pallets. Bachelor's thesis (TFG), EEBE-UPC.
+  </description>
+  <maintainer email="246763561+nilson6666@users.noreply.github.com">Nil</maintainer>
+  <license>MIT</license>
+  <url type="repository">https://github.com/nilson6666/agv-forklift-simulation-tfg</url>
+  <author>Nil</author>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rviz2</depend>
+  <depend>xacro</depend>
+  <depend>robot_state_publisher</depend>
+
+  <!-- Simulation -->
+  <exec_depend>ros_gz_sim</exec_depend>
+  <exec_depend>ros_gz_bridge</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>rclcpp_components</exec_depend>
+  <exec_depend>dual_laser_merger</exec_depend>
+  <exec_depend>joint_state_publisher_gui</exec_depend>
+
+  <!-- Mapping and navigation -->
+  <exec_depend>slam_toolbox</exec_depend>
+  <exec_depend>nav2_map_server</exec_depend>
+  <exec_depend>nav2_amcl</exec_depend>
+  <exec_depend>nav2_planner</exec_depend>
+  <exec_depend>nav2_navfn_planner</exec_depend>
+  <exec_depend>nav2_controller</exec_depend>
+  <exec_depend>nav2_mppi_controller</exec_depend>
+  <exec_depend>nav2_costmap_2d</exec_depend>
+  <exec_depend>nav2_behaviors</exec_depend>
+  <exec_depend>nav2_bt_navigator</exec_depend>
+  <exec_depend>nav2_lifecycle_manager</exec_depend>
+
+  <!-- Perception -->
+  <exec_depend>apriltag_ros</exec_depend>
+
+  <!-- Python scripts (teleop, mission behaviour tree, pallet spawner) -->
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>py_trees</exec_depend>
+  <exec_depend>py_trees_ros</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>nav2_msgs</exec_depend>
+  <exec_depend>action_msgs</exec_depend>
+  <exec_depend>rcl_interfaces</exec_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

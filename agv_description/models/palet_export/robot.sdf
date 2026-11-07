@@ -1,0 +1,104 @@
+<?xml version="1.0" ?>
+<!-- Generated using onshape-to-robot -->
+<!-- Onshape document_id: 62345a6fa72cdaa6036ece1c / workspace_id: 8c329f6c86d0c21b019b4f5c -->
+<sdf version="1.7">
+  <model name="pallet">
+    <!-- Link palet -->
+    <link name="palet">
+      <inertial>
+        <pose relative_to="palet">-5.55112e-17 0 0.0860787 0 0 0</pose>
+        <mass>18.9982</mass>
+        <inertia>
+          <ixx>2.87193</ixx>
+          <ixy>-1.11022e-16</ixy>
+          <ixz>0</ixz>
+          <iyy>1.26372</iyy>
+          <iyz>0</iyz>
+          <izz>4.04522</izz>
+        </inertia>
+      </inertial>
+      <pose>0 0 0 0 -0 0</pose>
+      <!-- Part palet -->
+      <visual name="palet_visual_mesh_1">
+        <pose relative_to="palet">-0.4 0.6 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>model://palet_export/assets/palet.stl</uri>
+          </mesh>
+        </geometry>
+        <!-- Wood brown: the export came out very light blue, almost the same
+             as the trailer, and the pallet was camouflaged on the bed -->
+        <material>
+          <ambient>0.545 0.38 0.22 1.0</ambient>
+          <diffuse>0.72 0.51 0.32 1.0</diffuse>
+          <specular>0.05 0.05 0.05 1</specular>
+          <emissive>0 0 0 0</emissive>
+        </material>
+      </visual>
+      <!-- Collision with primitive boxes, not the mesh: the (concave) STL
+           mesh as a dynamic collision blows up when it touches the
+           trailer's collision box. A single full box has no pocket, so
+           the tines could only push the pallet. Hence TWO boxes (deck +
+           feet) with an empty channel between z=0.022 and z=0.100 (the
+           real pocket window, see pallet_cycle_bt.py
+           TAG_Z_TO_HEIGHT_OFFSET): the tine slides in underneath and, when
+           rising, lifts the whole "palet" link (a single rigid body). -->
+      <collision name="palet_collision_top">
+        <pose relative_to="palet">0 0 0.122 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.8 1.2 0.044</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="palet_collision_feet">
+        <pose relative_to="palet">0 0 0.011 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.8 1.2 0.022</size>
+          </box>
+        </geometry>
+      </collision>
+      <!-- Central stringer, like the middle beam of a real Euro pallet:
+           without it the deck and feet only touched the tines on 2 small
+           patches (the width of each tine, 100mm, centred at ±186mm) and
+           the pallet could tip during transport.
+           Narrow strip in the FREE central channel between the 2 tines
+           (tine bodies at [136,236]mm and [-236,-136]mm -> safe gap
+           [-136,136]mm): 200mm wide (±100mm), 36mm of margin on each
+           side. Fills the whole pocket height (0.022-0.100) and the full
+           length — it does not interfere with any tine, they run in
+           different X lanes. -->
+      <collision name="palet_collision_middle">
+        <pose relative_to="palet">0 0 0.061 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.2 1.2 0.078</size>
+          </box>
+        </geometry>
+      </collision>
+      <!-- AprilTag tag36h11 id=0 at the centre of the short side (local +y,
+           0.8 x 0.144 m face). 0.12x0.12 m tag centred at mid height
+           (z=0.072). Thin box protruding 2 mm so the texture does not
+           z-fight with the pallet wood. -->
+      <visual name="palet_apriltag_visual">
+        <pose relative_to="palet">0 0.602 0.072 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.120 0.002 0.120</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>1 1 1 1</ambient>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0 0 0 1</specular>
+          <pbr>
+            <metal>
+              <albedo_map>model://palet_export/assets/tag36_11_00000.png</albedo_map>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

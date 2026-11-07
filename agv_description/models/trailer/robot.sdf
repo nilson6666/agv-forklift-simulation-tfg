@@ -1,0 +1,106 @@
+<?xml version="1.0" ?>
+<!--
+  Simplified trailer: a single box (12.0 x 3.464 x 1.7326 m) from the floor
+  up to the loading floor, used both as visual and as collision. The model
+  origin is at one end of the trailer; it extends 12 m along +x and its +y
+  side edge is at y=+0.245 (y=3.245 in the world when placed at (6,3)).
+
+  The trailer used during development was a detailed mesh downloaded from
+  GrabCAD. It is not included here because GrabCAD's terms do not allow
+  redistributing it. Since the simulation only interacts with the box
+  (physics) and the lidars only see what crosses their scan plane, the box
+  is enough.
+-->
+<sdf version="1.7">
+  <model name="trailer">
+    <!-- Static: scenery object, ignored by the physics solver -->
+    <static>true</static>
+    <!-- Link composite_part_1 -->
+    <link name="composite_part_1">
+      <inertial>
+        <pose relative_to="composite_part_1">0 0 0 0 0 0</pose>
+        <mass>1e-09</mass>
+        <inertia>
+          <ixx>1e-09</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>1e-09</iyy>
+          <iyz>0</iyz>
+          <izz>1e-09</izz>
+        </inertia>
+      </inertial>
+      <pose>0 0 0 0 -0 0</pose>
+      <!-- Visual = the same box as the collision. The gpu_lidars raycast
+           against visuals, so they see the whole side of the trailer at
+           their scan height (z≈0.21 m), consistent with the trailer box
+           painted on the Nav2 map (magatzem_amb_trailer). -->
+      <visual name="trailer_visual">
+        <pose relative_to="composite_part_1">5.691 -1.487 0.8663 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>12.000 3.464 1.7326</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.615686 0.811765 0.929412 1.0</ambient>
+          <diffuse>0.615686 0.811765 0.929412 1.0</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+          <emissive>0 0 0 0</emissive>
+        </material>
+      </visual>
+      <!-- Collision: one box from the floor (z=0) up to the loading floor
+           (z=1.7326), where the pallets rest. -->
+      <collision name="trailer_collision">
+        <pose relative_to="composite_part_1">5.691 -1.487 0.8663 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>12.000 3.464 1.7326</size>
+          </box>
+        </geometry>
+      </collision>
+      <!-- AprilTag tag36h11 id=10 FIXED TO THE STRUCTURE (not to a pallet).
+           If the trailer is EMPTY there is no pallet tag to read. This
+           tag represents a reference plate bolted to the trailer chassis
+           (common at real loading docks), always present regardless of
+           the load. Id 10: reserved, outside the 0-9 range that
+           spawn_palets.py assigns to pallets, so it never clashes with a
+           real pallet tag.
+
+           Height (z=1.7436 = bed_z 1.7326 + 0.011): NOT the same
+           convention as the pallet tags (there, z=0.072 above the bottom
+           because the fork must aim at the CENTRE OF THE POCKET). Here
+           the existing height formula (EstimateHeightFromTag in
+           pallet_cycle_bt.py) should give the fork height FLUSH WITH THE
+           EMPTY BED (no pocket to enter), not the centre of a
+           non-existent pocket. It was designed for h = tag_z - 0.041:
+             h_flush = bed_z - TINE_AT_H0(0.03) = 1.7326 - 0.03 = 1.7026
+             required tag_z = h_flush + 0.041 = 1.7436
+           NOTE: TAG_Z_TO_HEIGHT_OFFSET is now 0.071 (it was corrected to
+           centre the whole tine thickness in the pocket), so with this
+           placement the result is 3 cm lower than intended. The current
+           mission does not use tag 10; move the plate to z=1.7736 if it
+           is ever used.
+           Position x=0.3 (on the +y edge, y=0.247, 2 mm outwards like the
+           pallet tag): away from x=1..3 where pallets are loaded, so the
+           plate is visible with the trailer both empty and loaded. -->
+      <visual name="trailer_apriltag_visual">
+        <pose relative_to="composite_part_1">0.3 0.247 1.7436 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.120 0.002 0.120</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>1 1 1 1</ambient>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0 0 0 1</specular>
+          <pbr>
+            <metal>
+              <albedo_map>model://trailer/assets/tag36_11_00010.png</albedo_map>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>
