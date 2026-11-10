@@ -354,10 +354,7 @@ base_footprint_link ─▶ chassis_link ─▶ fixed_mast_link ─▶ moving_mas
   for transport.
 - **Trailer painted on the Nav2 map.** `magatzem_amb_trailer.yaml` adds the
   trailer's box to the SLAM map, so the planner knows about it before the
-  lidars see it. This was essential with the detailed trailer mesh used
-  during development: the lidars raycast against visuals and, at their
-  height, only saw its legs and wheels, not its solid front. The trailer
-  shipped here is a plain box, which the lidars do see as a wall.
+  lidars see it.
 - **Coarse-to-fine perception with cross-validation.** Nav2 only gets the
   robot within ~0.15 m / ~8°, which is enough to point the narrow fork
   camera at the gap between two pallets. The wide mast camera corrects the
@@ -461,13 +458,6 @@ one has not.
 
 Released under the [MIT License](LICENSE). The robot and pallet meshes are
 the author's own models.
-
-- **Trailer:** during development the simulation used a detailed trailer
-  mesh downloaded from [GrabCAD](https://grabcad.com/). It is **not
-  included** in this repository, because GrabCAD's terms of use do not
-  allow redistributing it. It has been replaced by a simplified box with
-  the same dimensions (12.0 × 3.464 × 1.7326 m) as its collision, which is
-  all the simulation interacts with.
 
 - AprilTag images (`tag36_11_*.png`): from
   [AprilRobotics/apriltag-imgs](https://github.com/AprilRobotics/apriltag-imgs)

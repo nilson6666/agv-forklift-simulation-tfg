@@ -4,12 +4,6 @@
   up to the loading floor, used both as visual and as collision. The model
   origin is at one end of the trailer; it extends 12 m along +x and its +y
   side edge is at y=+0.245 (y=3.245 in the world when placed at (6,3)).
-
-  The trailer used during development was a detailed mesh downloaded from
-  GrabCAD. It is not included here because GrabCAD's terms do not allow
-  redistributing it. Since the simulation only interacts with the box
-  (physics) and the lidars only see what crosses their scan plane, the box
-  is enough.
 -->
 <sdf version="1.7">
   <model name="trailer">

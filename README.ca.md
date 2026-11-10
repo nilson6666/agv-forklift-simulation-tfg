@@ -361,11 +361,7 @@ base_footprint_link ─▶ chassis_link ─▶ fixed_mast_link ─▶ moving_mas
   recupera el complet per al transport.
 - **Tràiler pintat al mapa de Nav2.** `magatzem_amb_trailer.yaml` afegeix
   la caixa del tràiler al mapa del SLAM, perquè el planificador el conegui
-  abans que el vegin els lidars. Era imprescindible amb la malla detallada
-  del tràiler que es va fer servir durant el desenvolupament: els lidars fan
-  *raycast* contra les visuals i, a la seva alçada, només en veien les potes
-  i les rodes, no la part frontal sòlida. El tràiler d'aquest repositori és
-  una caixa simple, que els lidars sí que veuen com una paret.
+  abans que el vegin els lidars.
 - **Percepció de groller a fi amb validació creuada.** Nav2 només deixa el
   robot amb una precisió d'~0.15 m / ~8°, i això ja basta perquè la càmera
   estreta de la forquilla apunti al buit entre dos palets. La càmera ampla
@@ -471,13 +467,6 @@ lliscants de `joint_state_publisher_gui` per moure els joints (sense Gazebo).
 
 Publicat sota la [Llicència MIT](LICENSE). Les malles del robot i del palet
 són models propis de l'autor.
-
-- **Tràiler:** durant el desenvolupament, la simulació feia servir una
-  malla detallada d'un tràiler descarregada de [GrabCAD](https://grabcad.com/).
-  **No s'inclou** en aquest repositori, perquè les condicions d'ús de
-  GrabCAD no en permeten la redistribució. S'ha substituït per una caixa
-  simplificada amb les mateixes dimensions (12.0 × 3.464 × 1.7326 m) que la
-  seva col·lisió, que és l'únic amb què interactua la simulació.
 
 - Imatges AprilTag (`tag36_11_*.png`): de
   [AprilRobotics/apriltag-imgs](https://github.com/AprilRobotics/apriltag-imgs)
